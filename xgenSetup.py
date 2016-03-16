@@ -296,4 +296,11 @@ def search_namespaces(character):
     """
     char_mObjs = character.get_current_mayaObjects
     char_mesh = char_mObjs.get_meshNodeName()
-    return char_mesh
+
+    full_ref_list = mc.ls(references=True)
+
+    for ref in full_ref_list:
+        ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
+        if char_mObjs.get_origMeshFile() in ref_file_name:
+
+    return

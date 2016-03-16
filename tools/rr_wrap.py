@@ -2,6 +2,8 @@
 # Ryan Roberts - Wrap Deformer
 # rr_wrap.py
 #
+# Found at: https://gist.github.com/mclavan/276a2b26cab5bc22d882
+#
 # Description:
 #       Ryan Robers created a simple function to create a wrap deformer.
 #       The wrap deformer needs a little more than the deform command to get working.
@@ -9,16 +11,28 @@
 #       I wanted to have the function also return the deformer to the user.  So, my contributions are pretty minor.
 #       I converted the wrap deformer into a pynode object type pm.nt.Wrap.
 #       Avery Brown
-#       Slightly altered things to take driver and driven as parameters instead of *args.  While this changes the functionality
-#       from that in the maya UI, it makes more sense within the code that I am using.  I also made some changes to make things
-#       more pep8-ish as pycharm was yelling at me about it.  Changed cmds to mc.  
+#       Slightly altered things to take driver and driven as parameters instead of *args.
+#       While this changes the functionality from that in the maya UI, it makes more sense within the code that
+#       I am using.  I also made some changes to make things more pep8-ish as pycharm was yelling at me about it.
+#       Changed cmds to mc.  Added a Docstring.  Removed Clavan's pymel return as I am not using pymel
 
 
 import maya.cmds as mc
-import pymel.core as pm 
 
 
 def create_wrap(driver, driven, **kwargs):
+    """
+    Creates a wrap deformer and connects all of the correct nodes to it.  Emulates a maya.cmds function
+    :param driver: The influence object
+    :param driven: The object getting the deformer
+    :param kwargs: Correspond to Maya UI parameters for Wrap deformers
+                    - weightThreshold: Float
+                    - maxDistance: Float
+                    - exclusiveBind: Boolean
+                    - autoWeightThreshold: Boolean
+                    - falloffMode: integer, 0 = Volume, 1 = Surface
+    :return: wrap deformer as a pynode object type pm.nt.Wrap
+    """
     
     influence = driver
     surface = driven
@@ -87,10 +101,8 @@ def create_wrap(driver, driven, **kwargs):
         mc.connectAttr(influence + '.wsm', wrapNode + '.nurbsSamples[0]')
 
     mc.connectAttr(influence + '.dropoff', wrapNode + '.dropoff[0]')
-    # I want to return a pyNode object for the wrap deformer.
-    # I do not see the reason to rewrite the code here into pymel.
-    # return wrapNode
-    return pm.nt.Wrap(wrapNode)
+
+    return wrapNode
     
 # selected = cmds.ls(sl=True)
 # createWrap(selected[0],selected[1])
