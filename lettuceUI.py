@@ -50,4 +50,6 @@ class LettuceUI:
         scene_chars = lxg.get_scene_characters(all_chars)
         lxg.copy_xgen_files(scene_chars)
         lxg.import_hairMayaFile(scene_chars)
+        for c in scene_chars:
+            lxg.wrap_hair_plates(c)
 

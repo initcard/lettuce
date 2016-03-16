@@ -17,14 +17,19 @@ class Character:
         self.collections = []
         self.mayaObjects = []
 
-        for col in element.findall("collection"):
-            self.collections.append(_Collection(col))
+        temp_col = element.findall("collection")
+        temp_mobj = element.findall("mayaObject")
 
-        for mobj in element.findall("mayaObject"):
-            self.mayaObjects.append(_MayaObject(mobj))
+        if temp_col is not None:
+            for col in temp_col:
+                self.collections.append(_Collection(col))
+
+        if temp_mobj is not None:
+            for mobj in temp_mobj:
+                self.mayaObjects.append(_MayaObject(mobj))
 
         self.current_collection = self.collections[0]
-        self.current_mayaObjects = self.collections[0]
+        self.current_mayaObjects = self.mayaObjects[0]
 
     def __str__(self):
         return "{0}, {1}, {2}, {3}".format(self.charName, self.charAltName, self.collections, self.mayaObjects)
@@ -114,13 +119,24 @@ class Character:
 class _Collection:
     def __init__(self, element):
         self._version = element.get("version")
-        self._mayaFile = element.find("mayaFile").text
-        self._xgenFile = element.find("xgenFile").text
+
+        try:
+            self._mayaFile = element.find("mayaFile").text
+        except AttributeError:
+            self._mayaFile = ""
+
+        try:
+            self._xgenFile = element.find("xgenFile").text
+        except AttributeError:
+            self._mayaFile = ""
 
         self._hairPlates = []
 
-        for hp in element.findall("hairPlate"):
-            self._hairPlates.append(hp.text)
+        temp_hp = element.findall("hairPlate")
+
+        if temp_hp is not None:
+            for hp in temp_hp:
+                self._hairPlates.append(hp.text)
 
     def __str__(self):
         return "{0}, {1}, {2}, {3}".format(self._version, self._mayaFile, self._xgenFile, self._hairPlates)
@@ -152,11 +168,19 @@ class _Collection:
 class _MayaObject:
     def __init__(self, element):
         self._version = element.get("version")
-        self._origMeshFile = element.find("mayaFile").text
-        self._meshNodeName = element.find("charcaterMesh").text
+
+        try:
+            self._origMeshFile = element.find("mayaFile").text
+        except AttributeError:
+            self._origMeshFile = ""
+
+        try:
+            self._meshNodeName = element.find("characterMesh").text
+        except AttributeError:
+            self._meshNodeName = ""
 
     def __str__(self):
-        return "{0}, {1}".format(self.version, self.meshNodeName)
+        return "{0}, {1}, {2}".format(self._version, self._meshNodeName, self._origMeshFile)
 
     def __repr__(self):
         return str(self)

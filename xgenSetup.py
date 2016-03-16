@@ -241,10 +241,10 @@ def wrap_hair_plates(character):
     :return:
     """
 
-    char_col = character.get_current_collection
+    char_col = character.get_current_collection()
 
     char_mesh = search_namespaces(character)
-    char_hair_plates = char_col.get_hairPlates
+    char_hair_plates = char_col.get_hairPlates()
 
     deformer_input_list = []
 
@@ -254,19 +254,25 @@ def wrap_hair_plates(character):
                                      "animCurveUU",
                                      )
     for n in filtered_list:
+        print n
         node_attr = mc.listAttr(n, leaf=True)
         if "envelope" in node_attr:
             deformer_input_list.append(n)
+    print deformer_input_list
     for o in deformer_input_list:
+        print "Setting {0} input {1} envelope to 0".format(char_mesh, o)
         mc.setAttr("{}.envelope".format(o), 0)
 
+    print char_hair_plates
     for hp in char_hair_plates:
         tools.create_wrap(char_mesh, hp,
                           exclusiveBind=True,
                           falloffMode=1
                           )
+        print "binding {0} to {1}".format(hp, char_mesh)
 
     for o in deformer_input_list:
+        print "Setting {0} input {1} envelope to 1".format(char_mesh, o)
         mc.setAttr("{}.envelope".format(o), 1)
 
 
@@ -292,9 +298,9 @@ def search_namespaces(character):
     """
     Searches maya namespaces to find a a character's mesh
     :param character: A Character object, singular
-    :return: A string containing the name of the character's mesh
+    :return: A string containing the name of the character's mesh or just the name of the character's mesh
     """
-    char_mObjs = character.get_current_mayaObjects
+    char_mObjs = character.get_current_mayaObjects()
     char_mesh = char_mObjs.get_meshNodeName()
 
     full_ref_list = mc.ls(references=True)
@@ -302,5 +308,12 @@ def search_namespaces(character):
     for ref in full_ref_list:
         ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
         if char_mObjs.get_origMeshFile() in ref_file_name:
+            return "{}:{}".format(remove_rn(ref), char_mesh)
+    return None
 
-    return
+
+def remove_rn(reference_node_name):
+    """ Removes the RN from the end of a reference node's name """
+    last_r = reference_node_name.rfind('R')
+    rn_removed = reference_node_name[:last_r]
+    return rn_removed
