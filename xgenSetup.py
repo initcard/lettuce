@@ -22,10 +22,12 @@ config = lettuceConfig.Configuration()
 char_hair_file = config.get_xml_file()
 
 
-# Generates character objects from the xml file
-# Returns a list of all of the character classes
-
 def generate_characters(xml_file):
+    """
+    Generates character objects based on the specified xml file
+    :param xml_file: A path to the specified xml file
+    :return: A list of all of the character objects generated
+    """
     xml_tree = ET.parse(xml_file)
     root = xml_tree.getroot()
 
@@ -39,6 +41,11 @@ def generate_characters(xml_file):
 
 
 def get_scene_characters(character_objs):
+    """
+    Filters the list of character objects to find which ones are present in the scene
+    :param character_objs: A list of character objects defined in the xml file
+    :return: A list of all of the defined characters in the scene
+    """
     char_in_scene = []
     full_ref_list = mc.ls(references=True)
 
@@ -54,6 +61,11 @@ def get_scene_characters(character_objs):
 
 
 def copy_xgen_files(character):
+    """
+
+    :param character:
+    :return:
+    """
     current_file_dir = get_scene_folder()
     project_dir = get_project_dir()
 
@@ -92,8 +104,19 @@ def copy_xgen_files(character):
 
 
 def import_hairMayaFile(character):
+    """
+    Imports the contents of the mayaFiles specified in the collections for the different characters.
+    Creates a set containing each hair system imported.  Deletes old hair systems on import to prevent clashing.
+    XGen limitations prevent importing with namespaces.
+    Uses the maya progress bar in case this takes a long time, which also makes it cancellable with the esc key
+
+    :param character: A list of Character objects to process
+    :return: A list of nodes that were imported
+    """
+
     imported_nodes = []
 
+    # Maya progress bar setup
     gMainProgressBar = mel.eval('$tmp = $gMainProgressBar')
 
     mc.progressBar(gMainProgressBar,
@@ -104,11 +127,14 @@ def import_hairMayaFile(character):
                    maxValue=len(character)
                    )
     step = 0
+
+    # For loop allows a list of all characters or a list of a single character for flexibility
     for c in character:
         set_name = "{}_hairSetSystem".format(c.get_charName())
 
         delete_set(set_name)
 
+        # Allows the user to cancel the evaluation of the script
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
             break
         collection = c.get_default_collection()
@@ -121,6 +147,7 @@ def import_hairMayaFile(character):
                             )
         imported_nodes.append(new_nodes)
 
+        # Naming the set and setting the description with it's import time.
         mc.sets(new_nodes,
                 name=set_name,
                 text="Contains the hair setup for {0}.  Created at {1} on {2}.".format(c.get_charName(),
@@ -129,8 +156,11 @@ def import_hairMayaFile(character):
                                                                                        )
                 )
 
+        # Advances the progress bar
         step += 1
         mc.progressBar(gMainProgressBar, edit=True, step=step)
+
+    # Closes the progress bar when complete
     mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
     return imported_nodes
 
@@ -139,6 +169,7 @@ def import_hairMayaFile(character):
 
 
 def get_project_dir():
+    """ Queries maya to find the current project directory """
     return mc.workspace(q=True, rootDirectory=True)
 
 # Wrapper for maya's file method
@@ -146,6 +177,7 @@ def get_project_dir():
 
 
 def get_scene_folder():
+    """ Queries Maya to get the folder containing the current scene """
     file_name = mc.file(q=True, sceneName=True)
     if sys.platform == "win32":
         last_slash = file_name.rfind('\\')
@@ -155,6 +187,11 @@ def get_scene_folder():
 
 
 def delete_set(set_name):
+    """
+    Attempts to delete every node in a set, will remove associated references as well
+    :param set_name: A string containing the name of a maya set
+    :return: Nothing
+    """
     if mc.objExists(set_name):
         mc.select(set_name)
         old_objects = mc.ls(selection=True)
@@ -170,14 +207,18 @@ def delete_set(set_name):
                 mc.file(ref_file, removeReference=True)
         for o in old_objects:
             try:
-                print "Deleting: {}".format(o)
                 mc.delete(o)
             except ValueError as e:
-                print "Warning: {}".format(e)
+                print e
         mc.delete(set_name)
 
 
 def unlock_nodes(set_name):
+    """
+    Will attempt to unlock every node in a set
+    :param set_name: A string containing the name of a maya set
+    :return: Nothing
+    """
     if mc.objExists(set_name):
         for o in mc.sets(set_name, query=True):
             if mc.lockNode(o, query=True):
@@ -186,13 +227,20 @@ def unlock_nodes(set_name):
 
 
 def save_and_reload_scene():
+    """ Uses Maya file commands to save the current file and reload it """
     current_file = mc.file(save=True)
     mc.file(current_file, ignoreVersion=True, open=True, force=True)
 
+# Attaches the hair plate to the character mesh using a wrap deformer.
+
 
 def wrap_hair_plates(character):
+    """
 
-    char_mObjs = character.get_current_mayaObjects
+    :param character: a Character object, singular
+    :return:
+    """
+
     char_col = character.get_current_collection
 
     char_mesh = search_namespaces(character)
@@ -222,14 +270,30 @@ def wrap_hair_plates(character):
         mc.setAttr("{}.envelope".format(o), 1)
 
 
-# Filters
+# Filters node types out of a list of nodes
 
 def node_type_filter(node_list, *filter_types):
+    """
+    Filters a list by type
+    :param node_list: A list containing maya nodes
+    :param filter_types: *A list of strings that correspond to maya types that need to be filtered out of node_list
+    :return: The node_list after it has been filtered of specified node types
+    """
     filtered_list = []
     for node in node_list:
         if mc.nodeType(node) not in filter_types:
             filtered_list.append(node)
     return filtered_list
 
+# Searches Maya namespaces to find the character mesh
+
+
 def search_namespaces(character):
-    return character.get_meshNodeName()
+    """
+    Searches maya namespaces to find a a character's mesh
+    :param character: A Character object, singular
+    :return: A string containing the name of the character's mesh
+    """
+    char_mObjs = character.get_current_mayaObjects
+    char_mesh = char_mObjs.get_meshNodeName()
+    return char_mesh
