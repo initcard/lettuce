@@ -3,11 +3,15 @@
 # rr_wrap.py
 #
 # Description:
-#     Ryan Robers created a simple function to create a wrap deformer.
-#     The wrap deformer needs a little more than the deform command to get working.
-#     Michael Clavan
-#     I wanted to have the function also return the deformer to the user.  So, my contributions are pretty minor.
-#     I converted the wrap deformer into a pynode object type pm.nt.Wrap.
+#       Ryan Robers created a simple function to create a wrap deformer.
+#       The wrap deformer needs a little more than the deform command to get working.
+#       Michael Clavan
+#       I wanted to have the function also return the deformer to the user.  So, my contributions are pretty minor.
+#       I converted the wrap deformer into a pynode object type pm.nt.Wrap.
+#       Avery Brown
+#       Slightly altered things to take driver and driven as parameters instead of *args.  While this changes the functionality
+#       from that in the maya UI, it makes more sense within the code that I am using.  I also made some changes to make things
+#       more pep8-ish as pycharm was yelling at me about it.  Changed cmds to mc.  
 
 
 import maya.cmds as mc
