@@ -50,7 +50,13 @@ class Configuration:
     # Getters
 
     def get_xml_file(self):
-        return (self._config_by_section(self.operatingSystem))['xmlfile']
+        return (self._config_by_section("paths"))['xmlfile']
 
     def get_version(self):
         return (self._config_by_section("general"))['version']
+
+
+class Logger:
+
+    def __init__ (self, config):
+        return " "

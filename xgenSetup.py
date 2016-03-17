@@ -4,6 +4,7 @@ import sys
 import shutil
 import xml.etree.cElementTree as ET
 import time
+import logging
 
 # Maya imports
 import maya.cmds as mc
@@ -263,13 +264,18 @@ def wrap_hair_plates(character):
         print "Setting {0} input {1} envelope to 0".format(char_mesh, o)
         mc.setAttr("{}.envelope".format(o), 0)
 
+    mc.refresh()
+
     print char_hair_plates
     for hp in char_hair_plates:
         tools.create_wrap(char_mesh, hp,
                           exclusiveBind=True,
-                          falloffMode=1
+                          falloffMode=1,
+                          shapeDeformed=True
                           )
         print "binding {0} to {1}".format(hp, char_mesh)
+
+    mc.refresh()
 
     for o in deformer_input_list:
         print "Setting {0} input {1} envelope to 1".format(char_mesh, o)

@@ -7,14 +7,17 @@
 # Description:
 #       Ryan Robers created a simple function to create a wrap deformer.
 #       The wrap deformer needs a little more than the deform command to get working.
+#
 #       Michael Clavan
 #       I wanted to have the function also return the deformer to the user.  So, my contributions are pretty minor.
 #       I converted the wrap deformer into a pynode object type pm.nt.Wrap.
+#
 #       Avery Brown
 #       Slightly altered things to take driver and driven as parameters instead of *args.
 #       While this changes the functionality from that in the maya UI, it makes more sense within the code that
 #       I am using.  I also made some changes to make things more pep8-ish as pycharm was yelling at me about it.
-#       Changed cmds to mc.  Added a Docstring.  Removed Clavan's pymel return as I am not using pymel
+#       Changed cmds to mc.  Added a Docstring.  Removed Michael Clavan's pymel return as I am not using pymel.
+#       Added an option to use a shapeDeformed node if it exists
 
 
 import maya.cmds as mc
@@ -31,17 +34,18 @@ def create_wrap(driver, driven, **kwargs):
                     - exclusiveBind: Boolean
                     - autoWeightThreshold: Boolean
                     - falloffMode: integer, 0 = Volume, 1 = Surface
+                    - shapeDeformed: Boolean
     :return: wrap deformer as a pynode object type pm.nt.Wrap
     """
     
     influence = driver
     surface = driven
     
-    shapes = mc.listRelatives(influence, shapes=True)
-    influenceShape = shapes[0]
+    inf_shapes = mc.listRelatives(influence, shapes=True)
+    influenceShape = inf_shapes[0]
 
-    shapes = mc.listRelatives(surface, shapes=True)
-    surfaceShape = shapes[0]
+    sur_shapes = mc.listRelatives(surface, shapes=True)
+    surfaceShape = sur_shapes[0]
 
     # create wrap deformer
     weightThreshold = kwargs.get('weightThreshold', 0.0)
@@ -49,6 +53,13 @@ def create_wrap(driver, driven, **kwargs):
     exclusiveBind = kwargs.get('exclusiveBind', False)
     autoWeightThreshold = kwargs.get('autoWeightThreshold', True)
     falloffMode = kwargs.get('falloffMode', 0)
+    shapeDeformed = kwargs.get('shapeDeformed', False)
+
+    if shapeDeformed:
+        for i in inf_shapes:
+            if "ShapeDeformed" in i:
+                if "Orig" not in i:
+                    influenceShape = i
 
     wrapData = mc.deformer(surface, type='wrap')
     wrapNode = wrapData[0]
