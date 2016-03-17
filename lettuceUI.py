@@ -1,18 +1,37 @@
 import maya.cmds as mc
 import lettuceConfig
 import xgenSetup as lxg
-
-config = lettuceConfig.Configuration()
+import logging
 
 
 class LettuceUI:
 
-    _winName = 'Lettuce'
-    uiWindow = mc.window(t=_winName)
-    title = "Lettuce UI v{}".format(config.get_version())
+    # _winName = 'Lettuce'
+    # uiWindow = mc.window(t=_winName)
+    # title = "Lettuce UI v{}".format(config.get_version())
 
     def __init__(self):
-        self.createUI()
+
+        # Log setup
+        self.lg = logging.getLogger("lettuce")
+        self.lg.setLevel(logging.DEBUG)
+        self.config = lettuceConfig.Configuration()
+        self.log_file = self.config.get_log_file()
+        self.fh = logging.FileHandler(self.log_file)
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        self.fh.setFormatter(formatter)
+        self.lg.addHandler(self.fh)
+        self.lg.info("LettuceUI Starting")
+
+        # XML File
+        self.char_hair_file = self.config.get_xml_file()
+        self.lg.debug("Character XML File located at: {}".format(self.char_hair_file))
+
+        self.all_chars = lxg.generate_characters(self.char_hair_file)
+
+        # UI Creation
+        # self.createUI()
+        self.lg.debug("UI Created")
 
     def createUI(self):
         if mc.window(self.uiWindow, exists=True):
@@ -53,3 +72,4 @@ class LettuceUI:
         for c in scene_chars:
             lxg.wrap_hair_plates(c)
 
+LettuceUI()

@@ -11,7 +11,6 @@ import maya.cmds as mc
 import maya.mel as mel
 
 # Inter-module imports
-import lettuceConfig
 from lettuceClasses import *
 import tools
 
@@ -19,8 +18,7 @@ import tools
 current_folder = "/Volumes/digm_anfx/SPRJ_cgbirds/_production/scenes/edits/HRD_021/"
 
 # Creates the configurations variable and sets up some other variables based on that
-config = lettuceConfig.Configuration()
-char_hair_file = config.get_xml_file()
+mlg = logging.getLogger("lettuce.xgenSetup")
 
 
 def generate_characters(xml_file):
@@ -29,13 +27,20 @@ def generate_characters(xml_file):
     :param xml_file: A path to the specified xml file
     :return: A list of all of the character objects generated
     """
+    flg = logging.getLogger("lettuce.xgenSetup.generate_characters")
+
+    flg.debug("Parsing XML File: {}".format(xml_file))
     xml_tree = ET.parse(xml_file)
     root = xml_tree.getroot()
 
+    flg.info("Generating {} Characters".format(len(root)))
     character_objs = []
     for child in root:
-        character_objs.append(Character(child))
+        char = Character(child)
+        flg.debug("Character: {}".format(char))
+        character_objs.append(char)
 
+    flg.info("Returning {} Characters".format(len(character_objs)))
     return character_objs
 
 # Filters the character list by the characters currently referenced into the scene
@@ -47,15 +52,25 @@ def get_scene_characters(character_objs):
     :param character_objs: A list of character objects defined in the xml file
     :return: A list of all of the defined characters in the scene
     """
+    flg = logging.getLogger("lettuce.xgenSetup.get_scene_characters")
+
     char_in_scene = []
     full_ref_list = mc.ls(references=True)
+
+    flg.info("Checking {} scene references for characters".format(len(full_ref_list)))
+    for r in full_ref_list:
+        flg.debug(r)
+
+    # TODO: Figure out fatal reference error, scene 04, shot irr_123 is the source
 
     for char in character_objs:
         for mobj in char.get_mayaObjects():
             for ref in full_ref_list:
                 ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
                 if mobj.get_origMeshFile() in ref_file_name:
+                    flg.info("{} is in scene".format(char))
                     char_in_scene.append(char)
+    flg.info("{} characters in scene".format(len(char_in_scene)))
     return char_in_scene
 
 # Copies the (char).xgen files from their original locations to the scene folder
@@ -63,12 +78,17 @@ def get_scene_characters(character_objs):
 
 def copy_xgen_files(character):
     """
-
-    :param character:
-    :return:
+    Copies xgen files from their central location to the scene folder
+    :param character: A list of Character objects to process
+    :return: Nothing
     """
+    flg = logging.getLogger("lettuce.xgenSetup.copy_xgen_files")
+
     current_file_dir = get_scene_folder()
     project_dir = get_project_dir()
+
+    flg.debug("Current Scene's folder: {}".format(current_file_dir))
+    flg.debug("Current Project's folder: {}".format(project_dir))
 
     gMainProgressBar = mel.eval('$tmp = $gMainProgressBar')
 
@@ -80,25 +100,35 @@ def copy_xgen_files(character):
                    maxValue=len(character)
                    )
     step = 0
+
+    flg.info("Copying {} XGen files".format(len(character)))
+
     for c in character:
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
+            flg.info("Progress Interrupted by user")
+            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
             break
         collection = c.get_default_collection()
+
+        flg.debug("Character: {}".format(character.get_charName()))
+        flg.debug("Collection: {}".format(collection))
+
         xg_file = collection.get_xgenFile()
         xg_file_resolved = os.path.join(project_dir, xg_file)
-        print "Copying file from: {0} to {1}\r...".format(xg_file_resolved, current_file_dir)
+
+        flg.debug("Copying file from: {0} to {1}".format(xg_file_resolved, current_file_dir))
+        flg.debug("...")
         try:
-            print "..."
             shutil.copy2(xg_file_resolved, current_file_dir)
-            print "Complete"
+            flg.debug("Complete")
         except IOError as e:
-            print "..."
             mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
-            print "IO Error, copying failed.  {}".format(e)
+            flg.error("IO Error, copying failed.  {}".format(e))
             break
         step += 1
         mc.progressBar(gMainProgressBar, edit=True, step=step)
 
+    flg.info("Complete, {} characters copied".format(len(character)))
     mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
 
 # Imports the maya file containing the hair system into the file
@@ -115,6 +145,8 @@ def import_hairMayaFile(character):
     :return: A list of nodes that were imported
     """
 
+    flg = logging.getLogger("lettuce.xgenSetup.import_hairMayaFile")
+
     imported_nodes = []
 
     # Maya progress bar setup
@@ -129,17 +161,29 @@ def import_hairMayaFile(character):
                    )
     step = 0
 
+    flg.info("Importing {} hair system files".format(len(character)))
+
     # For loop allows a list of all characters or a list of a single character for flexibility
     for c in character:
+        flg.debug("Character: {}".format(character.get_charName()))
         set_name = "{}_hairSetSystem".format(c.get_charName())
+
+        flg.debug("Generating character set name: {}".format(set_name))
 
         delete_set(set_name)
 
         # Allows the user to cancel the evaluation of the script
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
+            flg.info("Progress Interrupted by user")
+            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
             break
+
         collection = c.get_default_collection()
         ma_file = collection.get_hairMayaFile()
+
+        flg.debug("Collection: {}".format(collection))
+        flg.debug("Importing file: {}".format(ma_file))
+
         new_nodes = mc.file(ma_file,
                             i=True,
                             preserveReferences=True,
@@ -147,6 +191,10 @@ def import_hairMayaFile(character):
                             returnNewNodes=True,
                             )
         imported_nodes.append(new_nodes)
+
+        flg.debug("Imported Nodes:")
+        for n in new_nodes:
+            flg.debug(n)
 
         # Naming the set and setting the description with it's import time.
         mc.sets(new_nodes,
@@ -163,6 +211,11 @@ def import_hairMayaFile(character):
 
     # Closes the progress bar when complete
     mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
+
+    flg.info("Returning {} hair system node lists".format(len(imported_nodes)))
+
+    # TODO: figure out how best to return the created sets so that additional nodes can be appended to them
+
     return imported_nodes
 
 # Wrapper for maya's workspace method
@@ -171,7 +224,14 @@ def import_hairMayaFile(character):
 
 def get_project_dir():
     """ Queries maya to find the current project directory """
-    return mc.workspace(q=True, rootDirectory=True)
+
+    flg = logging.getLogger("lettuce.xgenSetup.get_project_dir")
+
+    proj_dir = mc.workspace(q=True, rootDirectory=True)
+
+    flg.debug("Current Project Folder: {}".format(proj_dir))
+
+    return proj_dir
 
 # Wrapper for maya's file method
 # Returns the scene name
@@ -179,12 +239,23 @@ def get_project_dir():
 
 def get_scene_folder():
     """ Queries Maya to get the folder containing the current scene """
+
+    flg = logging.getLogger("lettuce.xgenSetup.get_scene_folder")
+
     file_name = mc.file(q=True, sceneName=True)
+
+    flg.debug("Scene fileName: {}".format(file_name))
+
     if sys.platform == "win32":
         last_slash = file_name.rfind('\\')
     else:
         last_slash = file_name.rfind('/')
-    return file_name[:last_slash + 1]
+
+    scene_dir = file_name[:last_slash + 1]
+
+    flg.debug("Scene directory: {}".format(scene_dir))
+
+    return
 
 
 def delete_set(set_name):
@@ -193,6 +264,13 @@ def delete_set(set_name):
     :param set_name: A string containing the name of a maya set
     :return: Nothing
     """
+
+    flg = logging.getLogger("lettuce.xgenSetup.delete_set")
+
+    flg.debug("Set to delete: {}".format(set_name))
+
+    # TODO: All Debugs below this point
+
     if mc.objExists(set_name):
         mc.select(set_name)
         old_objects = mc.ls(selection=True)

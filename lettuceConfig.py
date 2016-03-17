@@ -1,6 +1,7 @@
 import ConfigParser
 import os
 import sys
+import time
 
 
 # Configuration File Setup
@@ -50,13 +51,16 @@ class Configuration:
     # Getters
 
     def get_xml_file(self):
-        return (self._config_by_section("paths"))['xmlfile']
+        proj_folder = (self._config_by_section("paths"))['project']
+        xml_file = (self._config_by_section("paths"))['xmlfile']
+        return "{0}{1}".format(proj_folder, xml_file)
 
     def get_version(self):
         return (self._config_by_section("general"))['version']
 
+    def get_log_file(self):
+        proj_folder = (self._config_by_section("paths"))['project']
+        log_folder = (self._config_by_section("paths"))['log']
+        log_name = "lettuce_{0}-{1}.log".format(self.get_version(), time.strftime("%y%m%d-%H.%M.%S"))
 
-class Logger:
-
-    def __init__ (self, config):
-        return " "
+        return "{0}{1}{2}".format(proj_folder, log_folder, log_name)
