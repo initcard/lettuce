@@ -1,0 +1,45 @@
+<?xml version='1.0' encoding='us-ascii'?>
+
+
+<lettuce>
+
+	<character name="janitor" altName="Ralph" >
+		<collection version="default">
+			<mayaFile>assets/characters/Janitor/xgen/Janitor_production_xgen.ma</mayaFile>
+			<xgenFile>assets/characters/Janitor/xgen/Janitor_production_xgen__ralph_collect.xgen</xgenFile>
+			<hairPlate>ralph_jaw_plate</hairPlate> 
+			<hairPlate>ralph_brow_plate</hairPlate>
+		</collection>
+		<mayaObject version="default">
+			<mayaFile>assets/characters/Janitor/Maya Files/Janitor_production_model.ma</mayaFile>
+			<characterMesh>topologized_body_mesh</characterMesh>
+		</mayaObject>
+	</character>
+
+	<character name="superhero" altName="Black Gold" >
+		<collection version="default">
+			<mayaFile>assets/characters/Superhero/xGen/SuperHero_production_xgen.ma</mayaFile>
+			<xgenFile>assets/characters/Superhero/xGen/SuperHero_production_xgen__blackGold_collect.xgen</xgenFile>
+			<hairPlate>brow_plate</hairPlate> 
+			<hairPlate>hair_plate</hairPlate>
+		</collection>
+		<mayaObject version="default">
+			<mayaFile>assets/characters/Superhero/Maya Files/SuperHero_production_model.ma</mayaFile>
+			<characterMesh>Body_mesh</characterMesh>
+		</mayaObject>
+	</character>
+
+	<character name="madScientist" altName="Doctor Boggles" >
+		<collection version="default">
+			<mayaFile>assets/characters/Mad Scientist/xgen/madScientist_production_xgen.ma</mayaFile>
+			<xgenFile>assets/characters/Mad Scientist/xgen/madScientist_production_xgen__madScientist_collect.xgen</xgenFile>
+			<hairPlate>haircap_MS</hairPlate>
+			<hairPlate>brow_plate_MS</hairPlate>
+		</collection>
+		<mayaObject version="default">
+			<mayaFile>assets/characters/Mad Scientist/Maya Files/madScientist_production_model.ma</mayaFile>
+			<characterMesh>madScientist_lowPoly_body_mesh</characterMesh>
+		</mayaObject>
+	</character>
+
+</lettuce>

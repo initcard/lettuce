@@ -64,6 +64,7 @@ class Configuration:
         log_folder = (self._config_by_section("paths"))['log']
         log_name = "lettuce_{0}-{1}-{2}.log".format(self.get_version(),
                                                     getpass.getuser(),
-                                                    time.strftime("%y%m%d-%H.%M.%S"))
+                                                    time.strftime("%y%m%d-%H.%M.%S")
+                                                    )
 
         return "{0}{1}{2}".format(proj_folder, log_folder, log_name)

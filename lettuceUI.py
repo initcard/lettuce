@@ -6,9 +6,8 @@ import logging
 
 class LettuceUI:
 
-    # _winName = 'Lettuce'
-    # uiWindow = mc.window(t=_winName)
-    # title = "Lettuce UI v{}".format(config.get_version())
+    _winName = 'Lettuce'
+    uiWindow = mc.window(t=_winName)
 
     def __init__(self):
 
@@ -30,7 +29,8 @@ class LettuceUI:
         self.all_chars = lxg.generate_characters(self.char_hair_file)
 
         # UI Creation
-        # self.createUI()
+        self.title = "Lettuce UI v{}".format(self.config.get_version())
+        self.createUI()
         self.lg.debug("UI Created")
 
     def createUI(self):
@@ -61,15 +61,13 @@ class LettuceUI:
 
         # Last UI line
 
-        print "Showing UI..."
+        self.lg.debug("Showing UI...")
         mc.showWindow(self.uiWindow)
 
     def run_test(self):
-        all_chars = lxg.generate_characters(lxg.char_hair_file)
+        all_chars = lxg.generate_characters(self.char_hair_file)
         scene_chars = lxg.get_scene_characters(all_chars)
         lxg.copy_xgen_files(scene_chars)
         lxg.import_hairMayaFile(scene_chars)
         for c in scene_chars:
             lxg.wrap_hair_plates(c)
-
-LettuceUI()

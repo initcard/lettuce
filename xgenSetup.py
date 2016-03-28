@@ -39,7 +39,7 @@ def generate_characters(xml_file):
             character_objs.append(char)
         except AttributeError as e:
             flg.error("Character not created from child, {}".format(child))
-            flg.error("Error: {}".format(e))
+            flg.debug("Error: {}".format(e))
 
     flg.info("Returning {} Characters".format(len(character_objs)))
     return character_objs
@@ -62,13 +62,23 @@ def get_scene_characters(character_objs):
 
     # TODO: Figure out fatal reference error, scene 04, shot irr_123 is the source
 
+    flg.debug("For char in character_objs")
     for char in character_objs:
         for mobj in char.get_mayaObjects():
             for ref in full_ref_list:
-                ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
-                if mobj.get_origMeshFile() in ref_file_name:
-                    flg.info("{} is in scene".format(char))
-                    char_in_scene.append(char)
+                flg.debug("Querying reference for {0}/{1}/{2}".format(char.get_charName(),
+                                                                      mobj.get_version(),
+                                                                      ref
+                                                                      ))
+                try:
+                    ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
+                    if mobj.get_origMeshFile() in ref_file_name:
+                        flg.info("{} is in scene".format(char))
+                        char_in_scene.append(char)
+                except RuntimeError as e:
+                    flg.warning("Unable to query reference, {}.".format(ref))
+                    flg.debug("Error: {}".format(e))
+
     flg.info("{} characters in scene".format(len(char_in_scene)))
     return char_in_scene
 
@@ -109,7 +119,7 @@ def copy_xgen_files(character):
             break
         collection = c.get_default_collection()
 
-        flg.debug("Character: {}".format(character.get_charName()))
+        flg.debug("Character: {}".format(c.get_charName()))
         flg.debug("Collection: {}".format(collection))
 
         xg_file = collection.get_xgenFile()
@@ -173,7 +183,7 @@ def import_hairMayaFile(character):
             flg.debug("Cancelled at beginning of loop")
             break
 
-        flg.debug("Character: {}".format(character.get_charName()))
+        flg.debug("Character: {}".format(c.get_charName()))
         set_name = "{}_hairSetSystem".format(c.get_charName())
 
         flg.debug("Generating character set name: {}".format(set_name))
@@ -276,7 +286,7 @@ def get_scene_folder():
 
     flg.debug("Scene directory: {}".format(scene_dir))
 
-    return
+    return scene_dir
 
 
 def delete_set(set_name):
@@ -457,16 +467,25 @@ def search_namespaces_for_mesh(character):
         flg.debug(r)
 
     for ref in full_ref_list:
-        ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
-        if char_mObjs.get_origMeshFile() in ref_file_name:
-            flg.debug("Reference file name: ".format(ref_file_name))
-            return "{}:{}".format(remove_rn(ref), char_mesh)
+        try:
+            ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
+            if char_mObjs.get_origMeshFile() in ref_file_name:
+                flg.debug("Reference file name: ".format(ref_file_name))
+                return "{}:{}".format(remove_rn(ref), char_mesh)
+        except RuntimeError as e:
+            flg.warning("Unable to query reference, {}.".format(ref))
+            flg.debug("Error: {}".format(e))
+
     flg.error("Mesh file, {}, not referenced in this scene.".format(char_mObjs.get_origMeshFile()))
-    return None
+    return ""
 
 
 def remove_rn(reference_node_name):
-    """ Removes the RN from the end of a reference node's name """
+    """
+    Removes the RN from the end of a reference node's name
+    :param reference_node_name: node with a reference prefix
+    :return: Node with reference prefix removed
+    """
 
     flg = logging.getLogger("lettuce.xgenSetup.remove_rn")
 
