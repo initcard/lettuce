@@ -30,7 +30,7 @@ class LettuceUI:
         self.all_chars = lxg.generate_characters(self.char_hair_file)
 
         # UI Creation
-        self.createUI()
+        # self.createUI()
         self.lg.debug("UI Created")
 
     def createUI(self):

@@ -14,9 +14,6 @@ import maya.mel as mel
 from lettuceClasses import *
 import tools
 
-# Temporary helper variables
-current_folder = "/Volumes/digm_anfx/SPRJ_cgbirds/_production/scenes/edits/HRD_021/"
-
 # Creates the configurations variable and sets up some other variables based on that
 mlg = logging.getLogger("lettuce.xgenSetup")
 
@@ -36,14 +33,16 @@ def generate_characters(xml_file):
     flg.info("Generating {} Characters".format(len(root)))
     character_objs = []
     for child in root:
-        char = Character(child)
-        flg.debug("Character: {}".format(char))
-        character_objs.append(char)
+        try:
+            char = Character(child)
+            flg.debug("Character: {}".format(char))
+            character_objs.append(char)
+        except AttributeError as e:
+            flg.error("Character not created from child, {}".format(child))
+            flg.error("Error: {}".format(e))
 
     flg.info("Returning {} Characters".format(len(character_objs)))
     return character_objs
-
-# Filters the character list by the characters currently referenced into the scene
 
 
 def get_scene_characters(character_objs):
@@ -147,7 +146,7 @@ def import_hairMayaFile(character):
 
     flg = logging.getLogger("lettuce.xgenSetup.import_hairMayaFile")
 
-    imported_nodes = []
+    set_packages = []
 
     # Maya progress bar setup
     gMainProgressBar = mel.eval('$tmp = $gMainProgressBar')
@@ -165,6 +164,15 @@ def import_hairMayaFile(character):
 
     # For loop allows a list of all characters or a list of a single character for flexibility
     for c in character:
+        imported_nodes = []
+
+        # Allows the user to cancel the evaluation of the script
+        if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
+            flg.info("Progress Interrupted by user")
+            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.debug("Cancelled at beginning of loop")
+            break
+
         flg.debug("Character: {}".format(character.get_charName()))
         set_name = "{}_hairSetSystem".format(c.get_charName())
 
@@ -176,6 +184,7 @@ def import_hairMayaFile(character):
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
             flg.info("Progress Interrupted by user")
             flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.debug("Cancelled after set sanitization")
             break
 
         collection = c.get_default_collection()
@@ -205,6 +214,20 @@ def import_hairMayaFile(character):
                                                                                        )
                 )
 
+        # Allows the user to cancel the evaluation of the script
+        if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
+            flg.info("Progress Interrupted by user")
+            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.debug("Cancelled after import")
+            break
+
+        flg.debug("Creating return package")
+        flg.info("Returning {} hair system nodes".format(len(imported_nodes)))
+
+        package = SetPackage(imported_nodes, set_name)
+
+        set_packages.append(package)
+
         # Advances the progress bar
         step += 1
         mc.progressBar(gMainProgressBar, edit=True, step=step)
@@ -212,11 +235,9 @@ def import_hairMayaFile(character):
     # Closes the progress bar when complete
     mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
 
-    flg.info("Returning {} hair system node lists".format(len(imported_nodes)))
+    flg.debug("Returning packages :".format(set_packages))
 
-    # TODO: figure out how best to return the created sets so that additional nodes can be appended to them
-
-    return imported_nodes
+    return set_packages
 
 # Wrapper for maya's workspace method
 # Returns the project directory
@@ -269,26 +290,35 @@ def delete_set(set_name):
 
     flg.debug("Set to delete: {}".format(set_name))
 
-    # TODO: All Debugs below this point
-
     if mc.objExists(set_name):
         mc.select(set_name)
         old_objects = mc.ls(selection=True)
+        flg.debug("Old Objects:")
+        for o in old_objects:
+            flg.debug(o)
         ref_objects = mc.ls(selection=True, referencedNodes=True)
+
         ref_del_queue = []
         if len(ref_objects) > 0:
+            flg.debug("Old Reference Nodes:")
             for o in ref_objects:
+                flg.debug(o)
+            for o in ref_objects:
+                flg.debug("Queuing {} for reference removal".format(o))
                 top = mc.referenceQuery(o, referenceNode=True)
                 ref_del_queue.append(top)
         if len(ref_del_queue):
             for o in ref_del_queue:
+                flg.debug("Removing reference: {}".format(o))
                 ref_file = mc.referenceQuery(o, filename=True)
                 mc.file(ref_file, removeReference=True)
         for o in old_objects:
             try:
+                flg.debug("Deleting {}".format(o))
                 mc.delete(o)
             except ValueError as e:
-                print e
+                flg.warning("Unable to delete {0}.  Error: {1}".format(o, e))
+        flg.debug("Deleting set: {}".format(set_name))
         mc.delete(set_name)
 
 
@@ -298,69 +328,87 @@ def unlock_nodes(set_name):
     :param set_name: A string containing the name of a maya set
     :return: Nothing
     """
+
+    flg = logging.getLogger("lettuce.xgenSetup.unlock_nodes")
+
     if mc.objExists(set_name):
         for o in mc.sets(set_name, query=True):
             if mc.lockNode(o, query=True):
-                print "Unlocking {}".format(o)
+                flg.debug("Unlocking {}".format(o))
                 mc.lockNode(o, lock=False)
+    else:
+        flg.warning("Set, {}, does not exist".format(set_name))
 
 
 def save_and_reload_scene():
     """ Uses Maya file commands to save the current file and reload it """
-    current_file = mc.file(save=True)
-    mc.file(current_file, ignoreVersion=True, open=True, force=True)
 
-# Attaches the hair plate to the character mesh using a wrap deformer.
+    flg = logging.getLogger("lettuce.xgenSetup.save_and_reload_scene")
+
+    current_file = mc.file(save=True)
+    flg.debug("Current File: {}".format(current_file))
+    mc.file(current_file, ignoreVersion=True, open=True, force=True)
 
 
 def wrap_hair_plates(character):
     """
-
+    Wraps the hairplate objects to the character object
     :param character: a Character object, singular
     :return:
     """
 
-    char_col = character.get_current_collection()
+    flg = logging.getLogger("lettuce.xgenSetup.wrap_hair_plates")
 
-    char_mesh = search_namespaces(character)
+    flg.debug("Wrapping hair plates to {}".format(character.get_charName()))
+
+    char_col = character.get_current_collection()
+    flg.debug("Current Collection: {}".format(char_col.get_version()))
+
+    char_mesh = search_namespaces_for_mesh(character)
     char_hair_plates = char_col.get_hairPlates()
+    flg.debug("Character mesh object: {}".format(char_mesh))
+    flg.debug("Character hair plate objects: {}".format(char_hair_plates))
 
     deformer_input_list = []
 
     history_list = mc.listHistory(char_mesh)
+    flg.debug("Character mesh history nodes: {}".format(history_list))
+
     filtered_list = node_type_filter(history_list,
                                      "joint",
                                      "animCurveUU",
                                      )
+    flg.debug("Character mesh history nodes, filtered: ".format(filtered_list))
+
     for n in filtered_list:
         print n
         node_attr = mc.listAttr(n, leaf=True)
         if "envelope" in node_attr:
             deformer_input_list.append(n)
-    print deformer_input_list
+    flg.debug("Objects containing envelope attributes: {}".format(deformer_input_list))
+
     for o in deformer_input_list:
-        print "Setting {0} input {1} envelope to 0".format(char_mesh, o)
+        flg.debug("Setting {0} input {1} envelope to 0".format(char_mesh, o))
         mc.setAttr("{}.envelope".format(o), 0)
 
+    flg.debug("Viewport refresh")
     mc.refresh()
 
-    print char_hair_plates
     for hp in char_hair_plates:
         tools.create_wrap(char_mesh, hp,
                           exclusiveBind=True,
                           falloffMode=1,
                           shapeDeformed=True
                           )
-        print "binding {0} to {1}".format(hp, char_mesh)
+        flg.debug("Binding {0} to {1}".format(hp, char_mesh))
 
+    flg.debug("Viewport refresh")
     mc.refresh()
 
     for o in deformer_input_list:
-        print "Setting {0} input {1} envelope to 1".format(char_mesh, o)
+        flg.debug("Setting {0} input {1} envelope to 1".format(char_mesh, o))
         mc.setAttr("{}.envelope".format(o), 1)
 
-
-# Filters node types out of a list of nodes
 
 def node_type_filter(node_list, *filter_types):
     """
@@ -369,35 +417,61 @@ def node_type_filter(node_list, *filter_types):
     :param filter_types: *A list of strings that correspond to maya types that need to be filtered out of node_list
     :return: The node_list after it has been filtered of specified node types
     """
+
+    flg = logging.getLogger("lettuce.xgenSetup.node_type_filter")
+
+    flg.debug("Filtering Node List")
+
     filtered_list = []
     for node in node_list:
-        if mc.nodeType(node) not in filter_types:
+        node_type = mc.nodeType(node)
+        flg.debug("Node, {0}, is of type, {1}".format(node, node_type))
+        if node_type not in filter_types:
+            flg.debug("Node kept")
             filtered_list.append(node)
+        else:
+            flg.debug("Node filtered")
+    flg.debug("Returning Filtered List")
     return filtered_list
 
-# Searches Maya namespaces to find the character mesh
 
-
-def search_namespaces(character):
+def search_namespaces_for_mesh(character):
     """
     Searches maya namespaces to find a a character's mesh
     :param character: A Character object, singular
     :return: A string containing the name of the character's mesh or just the name of the character's mesh
     """
+
+    flg = logging.getLogger("lettuce.xgenSetup.search_namespaces_for_mesh")
+
+    flg.debug("Searching namespaces for {}".format(character.get_charName()))
+
     char_mObjs = character.get_current_mayaObjects()
     char_mesh = char_mObjs.get_meshNodeName()
+    flg.debug("Character's maya objects: {}".format(char_mObjs.get_version()))
+    flg.debug("Character's mesh object: {}".format(char_mesh))
 
     full_ref_list = mc.ls(references=True)
+    flg.debug("Full scene reference list: ")
+    for r in full_ref_list:
+        flg.debug(r)
 
     for ref in full_ref_list:
         ref_file_name = os.path.normpath(mc.referenceQuery(ref, filename=True))
         if char_mObjs.get_origMeshFile() in ref_file_name:
+            flg.debug("Reference file name: ".format(ref_file_name))
             return "{}:{}".format(remove_rn(ref), char_mesh)
+    flg.error("Mesh file, {}, not referenced in this scene.".format(char_mObjs.get_origMeshFile()))
     return None
 
 
 def remove_rn(reference_node_name):
     """ Removes the RN from the end of a reference node's name """
+
+    flg = logging.getLogger("lettuce.xgenSetup.remove_rn")
+
     last_r = reference_node_name.rfind('R')
     rn_removed = reference_node_name[:last_r]
+
+    flg.debug("Converting {0} to {1}.".format(reference_node_name, rn_removed))
     return rn_removed

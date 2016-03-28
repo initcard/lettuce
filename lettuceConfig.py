@@ -2,6 +2,7 @@ import ConfigParser
 import os
 import sys
 import time
+import getpass
 
 
 # Configuration File Setup
@@ -61,6 +62,8 @@ class Configuration:
     def get_log_file(self):
         proj_folder = (self._config_by_section("paths"))['project']
         log_folder = (self._config_by_section("paths"))['log']
-        log_name = "lettuce_{0}-{1}.log".format(self.get_version(), time.strftime("%y%m%d-%H.%M.%S"))
+        log_name = "lettuce_{0}-{1}-{2}.log".format(self.get_version(),
+                                                    getpass.getuser(),
+                                                    time.strftime("%y%m%d-%H.%M.%S"))
 
         return "{0}{1}{2}".format(proj_folder, log_folder, log_name)
