@@ -49,7 +49,9 @@ class Configuration:
                 config_dict[option] = None
         return config_dict
 
-    # Getters
+    # ---------------------------------------------------
+    #                       Getters
+    # ---------------------------------------------------
 
     def get_xml_file(self):
         proj_folder = (self._config_by_section("paths"))['project']
@@ -68,3 +70,9 @@ class Configuration:
                                                     )
 
         return "{0}{1}{2}".format(proj_folder, log_folder, log_name)
+
+    def get_log_level(self):
+        return "logging.{}".format(self._config_by_section("logging_root")["level"])
+
+    def get_formatter(self):
+        return self._config_by_section("logging_root")["format"]
