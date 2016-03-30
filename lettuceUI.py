@@ -12,7 +12,6 @@ class LettuceUI:
     uiWindow = mc.window(t=_winName)
 
     def __init__(self):
-
         # Config
         self.config = lettuceConfig.Configuration()
 
@@ -35,6 +34,7 @@ class LettuceUI:
         # Characters
         self.char_in_scene = False
         self.char_in_scene_list = []
+        self.char_hair_sets = {}
 
         # UI Creation
         self.title = "Lettuce UI v{}".format(self.config.get_version())
@@ -173,72 +173,98 @@ class LettuceUI:
             flg.debug("Created row: {}".format(name))
 
             frame_row = mc.rowLayout(name,
-                                     label='',
                                      parent=parent,
                                      width=400,
-                                     labelVisible=False,
-                                     marginWidth=2
+                                     numberOfColumns=2,
+                                     columnWidth2=[200, 200]
                                      )
             frames.append(name)
             frame_objects.append(frame_row)
         else:
             flg.debug("More than 2 characters")
-            for i in range(0, int(math.ceil(len(characters))*0.5)):
+            rows_to_make = int(math.ceil(len(characters)*0.5))
+            flg.debug("Going to create {0} rows to contain {1} characters.".format(rows_to_make,
+                                                                                   len(characters)
+                                                                                   ))
+            for i in range(0, rows_to_make):
                 name = 'row{}'.format(i)
 
                 flg.debug("Created row: {}".format(name))
 
                 frame_row = mc.rowLayout(name,
-                                         label='',
                                          parent=parent,
                                          width=400,
-                                         labelVisible=False,
-                                         marginWidth=2
+                                         numberOfColumns=2,
+                                         columnWidth2=[200, 200]
                                          )
                 frames.append(name)
                 frame_objects.append(frame_row)
 
         flg.debug("Created {} total rows".format(len(frames)))
 
-        char = 0
+        index = 0
 
         for f in frames:
-            if math.ceil(len(characters))*0.5 < len(frames):
-                self._create_character_panel(characters[char], f, False)
-                char += 1
-                self._create_character_panel(characters[char], f, False)
-                char += 1
-            else:
-                self._create_character_panel(characters[char], f, True)
+            for c in range(index, len(characters)):
+                flg.debug("Creating panel: {0}; number {1}; in frame {2}".format(characters[c].get_charName(),
+                                                                                 c,
+                                                                                 f
+                                                                                 ))
+                self._create_character_panel(characters[c], f)
+                if index % 2 == 1:
+                    index += 1
+                    break
+                index += 1
 
-        return
-
-    def _create_character_panel(self, character, parent, full):
+    def _create_character_panel(self, character, parent):
 
         flg = logging.getLogger("lettuce._create_character_panel")
 
         root_layout = "{}_panel".format(character.get_charName())
-        if full:
-            width = 400
-        else:
-            width = 200
+
+        flg.debug("Panel name: {}".format(root_layout))
         mc.columnLayout(root_layout,
                         parent=parent,
-                        width=width,
+                        width=200,
                         height=400
                         )
-        mc.button("button",
-                  label="button",
+        mc.text(label="{}".format(character.get_charAltName()),
+                width=200,
+                align="center",
+                font="boldLabelFont"
+                )
+
+        hair_drop_down = "{}_hair".format(character.get_charName())
+
+        mc.optionMenu(hair_drop_down,
+                      width=400,
+                      changeCommand=lambda *_: self._collection_menu_change(hair_drop_down)
+                      )
+        for i in character.get_collections():
+            mc.menuItem("{0}_{1}".format(hair_drop_down, i.get_version()),
+                        label="{}".format(i.get_version()),
+                        parent=hair_drop_down
+                        )
+
+        mc.button(label="button",
                   parent=root_layout
                   )
 
     def _copy_all_desc(self):
         if self.xml_load_state:
-            return
+            lxg.copy_xgen_files(self.char_in_scene_list)
 
     def _import_all_hair(self):
         if self.xml_load_state:
-            return
+            set_objects = lxg.import_hairMayaFile(self.char_in_scene_list)
+            for o in set_objects:
+                self.char_hair_sets[o.get_name()] = o
+
+    def _collection_menu_change(self, parent):
+        mentuItem = mc.optionMenu(parent,
+                                  query=True,
+                                  )
+        print mentuItem
 
     def _xml_path_menu(self):
         return
@@ -247,15 +273,22 @@ class LettuceUI:
         return
 
     def _documentation(self):
-        return
+        mc.launch(webPage="https://github.com/theacb/lettuce/wiki")
 
     def _reloadUI(self, frame):
 
         flg = logging.getLogger("lettuce._reloadUI")
 
         mc.deleteUI(frame)
+        flg.debug("Deleting UI: {}".format(frame))
 
-        flg.debug("Deleting button: {}".format(button))
+        mc.frameLayout('masterFrame',
+                       parent=self.uiWindow,
+                       label='',
+                       width=400,
+                       labelVisible=False,
+                       marginWidth=2
+                       )
 
         if self.xml_load_state:
             flg.debug("XML File Loaded")
@@ -272,13 +305,6 @@ class LettuceUI:
             flg.debug("Creating Character Menus")
             self._create_character_frame(self.char_in_scene_list, "masterFrame")
         else:
-            mc.frameLayout('masterFrame',
-                           parent=self.uiWindow,
-                           label='',
-                           width=400,
-                           labelVisible=False,
-                           marginWidth=2
-                           )
             flg.debug("Added reload button ")
             mc.button('reloadButton',
                       label="Reload",

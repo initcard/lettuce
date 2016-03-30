@@ -151,7 +151,7 @@ def import_hairMayaFile(character):
     Uses the maya progress bar in case this takes a long time, which also makes it cancellable with the esc key
 
     :param character: A list of Character objects to process
-    :return: A list of nodes that were imported
+    :return: A class object containing nodes that were imported
     """
 
     flg = logging.getLogger("lettuce.xgenSetup.import_hairMayaFile")
