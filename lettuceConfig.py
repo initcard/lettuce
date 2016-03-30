@@ -73,6 +73,3 @@ class Configuration:
 
     def get_log_level(self):
         return "logging.{}".format(self._config_by_section("logging_root")["level"])
-
-    def get_formatter(self):
-        return self._config_by_section("logging_root")["format"]
