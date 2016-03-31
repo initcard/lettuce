@@ -39,7 +39,7 @@ class LettuceUI:
         # UI Creation
         self.title = "Lettuce UI v{}".format(self.config.get_version())
         self._createUI()
-        self.lg.debug("UI Created")
+        self.lg.info("UI Created")
 
     def _createUI(self):
 
@@ -50,15 +50,16 @@ class LettuceUI:
 
         mc.window(self.uiWindow,
                   title="{}".format(self.title),
-                  menuBar=True
+                  menuBar=True,
+                  sizeable=False
                   )
 
         mc.window(self.uiWindow,
-                  widthHeight=(400, 400),
+                  widthHeight=(406, 202),
                   edit=True,
                   )
 
-        flg.debug("Window Created")
+        flg.info("Window Created")
 
         mc.menu("file_menu",
                 parent=self.uiWindow,
@@ -72,7 +73,7 @@ class LettuceUI:
                     command=lambda *_: self._import_all_hair()
                     )
         mc.menuItem(label="Delete ALL Character's Hair",
-                    command=lambda *_: self._reloadUI()
+                    command=lambda *_: self._delete_all_hair()
                     )
         mc.menuItem(label="Reload",
                     command=lambda *_: self._reloadUI("masterFrame")
@@ -89,6 +90,31 @@ class LettuceUI:
         mc.menuItem(label="Log Path",
                     command=lambda *_: self._log_path_menu()
                     )
+        mc.menuItem("lg_lvl_menu",
+                    label="Log Level",
+                    subMenu=True
+                    )
+        mc.radioMenuItemCollection(parent="lg_lvl_menu")
+        mc.menuItem(label="Debug",
+                    radioButton=False,
+                    command=lambda *_: self._change_logging_level("logging.DEBUG")
+                    )
+        mc.menuItem(label="Info",
+                    radioButton=False,
+                    command=lambda *_: self._change_logging_level("logging.INFO")
+                    )
+        mc.menuItem(label="Warning",
+                    radioButton=True,
+                    command=lambda *_: self._change_logging_level("logging.WARNING")
+                    )
+        mc.menuItem(label="Error",
+                    radioButton=False,
+                    command=lambda *_: self._change_logging_level("logging.ERROR")
+                    )
+        mc.menuItem(label="Critical",
+                    radioButton=False,
+                    command=lambda *_: self._change_logging_level("logging.CRITICAL")
+                    )
 
         mc.menu("help_menu",
                 parent=self.uiWindow,
@@ -99,33 +125,33 @@ class LettuceUI:
                     command=lambda *_: self._documentation()
                     )
 
-        flg.debug("Menu Bar Created")
+        flg.info("Menu Bar Created")
 
         mc.frameLayout('masterFrame',
                        label='',
                        width=400,
                        labelVisible=False,
-                       marginWidth=2
+                       marginWidth=0
                        )
 
-        flg.debug("Master Frame Created")
+        flg.info("Master Frame Created")
 
         if self.xml_load_state:
-            flg.debug("XML File Loaded")
+            flg.info("XML File Loaded")
             self.char_in_scene_list = self._get_characters(self.char_xml_file)
 
             if len(self.char_in_scene_list) > 0:
                 self.char_in_scene = True
-                flg.debug("Characters verified in Scene")
+                flg.info("Characters verified in Scene")
             else:
                 self.char_in_scene = False
-                flg.debug("Characters verified not in scene")
+                flg.info("Characters verified not in scene")
 
         if self.char_in_scene:
-            flg.debug("Creating Character Menus")
+            flg.info("Creating Character Menus")
             self._create_character_frame(self.char_in_scene_list, "masterFrame")
         else:
-            flg.debug("Added reload button ")
+            flg.info("Added reload button ")
             mc.button('reloadButton',
                       label="Reload",
                       command=lambda *_: self._reloadUI("masterFrame")
@@ -133,25 +159,31 @@ class LettuceUI:
 
         # Last UI line
 
-        flg.debug("Showing UI...")
+        flg.info("Showing UI...")
         mc.showWindow(self.uiWindow)
+
+    def _change_logging_level(self, level):
+        flg = logging.getLogger("lettuce._change_logging_level")
+        flg.debug("Changing Log Level to {}".format(level))
+        print("Changing Log Level to {}".format(level))
+        self.lg.setLevel(eval(level))
 
     def _get_characters(self, xml_file):
 
         flg = logging.getLogger("lettuce._get_characters")
 
-        flg.debug("Retrieving Characters from XML File: {}".format(xml_file))
+        flg.info("Retrieving Characters from XML File: {}".format(xml_file))
         all_chars = lxg.generate_characters(xml_file)
         flg.info("Retrieved {} Characters in XML File".format(len(all_chars)))
 
         flg.debug("Characters Retrieved: ")
-        for c in all_chars :
+        for c in all_chars:
             flg.debug(c.get_charName())
 
         scene_chars = lxg.get_scene_characters(all_chars)
 
         flg.debug("Characters Found: ")
-        for c in scene_chars :
+        for c in scene_chars:
             flg.debug(c.get_charName())
 
         return scene_chars
@@ -163,14 +195,14 @@ class LettuceUI:
         frames = []
         frame_objects = []
 
-        flg.debug("Exactly {} characters".format(len(characters)))
+        flg.info("Exactly {} characters".format(len(characters)))
 
         if len(characters) < 2:
-            flg.debug("Less than 2 characters")
+            flg.info("Less than 2 characters")
 
             name = 'row0'
 
-            flg.debug("Created row: {}".format(name))
+            flg.info("Created row: {}".format(name))
 
             frame_row = mc.rowLayout(name,
                                      parent=parent,
@@ -181,15 +213,15 @@ class LettuceUI:
             frames.append(name)
             frame_objects.append(frame_row)
         else:
-            flg.debug("More than 2 characters")
+            flg.info("More than 2 characters")
             rows_to_make = int(math.ceil(len(characters)*0.5))
-            flg.debug("Going to create {0} rows to contain {1} characters.".format(rows_to_make,
+            flg.info("Going to create {0} rows to contain {1} characters.".format(rows_to_make,
                                                                                    len(characters)
                                                                                    ))
             for i in range(0, rows_to_make):
                 name = 'row{}'.format(i)
 
-                flg.debug("Created row: {}".format(name))
+                flg.info("Created row: {}".format(name))
 
                 frame_row = mc.rowLayout(name,
                                          parent=parent,
@@ -199,14 +231,18 @@ class LettuceUI:
                                          )
                 frames.append(name)
                 frame_objects.append(frame_row)
+                mc.window(self.uiWindow,
+                          widthHeight=(406, (rows_to_make * 200) + 2),
+                          edit=True,
+                          )
 
-        flg.debug("Created {} total rows".format(len(frames)))
+        flg.info("Created {} total rows".format(len(frames)))
 
         index = 0
 
         for f in frames:
             for c in range(index, len(characters)):
-                flg.debug("Creating panel: {0}; number {1}; in frame {2}".format(characters[c].get_charName(),
+                flg.info("Creating panel: {0}; number {1}; in frame {2}".format(characters[c].get_charName(),
                                                                                  c,
                                                                                  f
                                                                                  ))
@@ -220,56 +256,174 @@ class LettuceUI:
 
         flg = logging.getLogger("lettuce._create_character_panel")
 
-        root_layout = "{}_panel".format(character.get_charName())
+        col_layout = "{}_panel".format(character.get_charName())
+        root_layout = "{}_frame".format(character.get_charName())
 
-        flg.debug("Panel name: {}".format(root_layout))
-        mc.columnLayout(root_layout,
-                        parent=parent,
-                        width=200,
-                        height=400
+        mc.frameLayout(root_layout,
+                       labelVisible=False,
+                       parent=parent,
+                       width=200,
+                       marginWidth=10
+                       )
+
+        flg.info("Panel name: {}".format(col_layout))
+        mc.columnLayout(col_layout,
+                        parent=root_layout,
+                        width=180,
+                        height=200,
+                        enableBackground=True,
+                        backgroundColor=[0.3, 0.3, 0.3]
                         )
         mc.text(label="{}".format(character.get_charAltName()),
-                width=200,
+                width=180,
                 align="center",
                 font="boldLabelFont"
                 )
 
+        mc.text(label=" ")
+
         hair_drop_down = "{}_hair".format(character.get_charName())
 
         mc.optionMenu(hair_drop_down,
-                      width=400,
-                      changeCommand=lambda *_: self._collection_menu_change(hair_drop_down)
+                      parent=col_layout,
+                      width=180,
+                      changeCommand=lambda *_: self._collection_menu_change(character, hair_drop_down)
                       )
         for i in character.get_collections():
             mc.menuItem("{0}_{1}".format(hair_drop_down, i.get_version()),
                         label="{}".format(i.get_version()),
                         parent=hair_drop_down
                         )
+            flg.info("Creating Menu Item for {}".format(i.get_version()))
 
-        mc.button(label="button",
-                  parent=root_layout
+        mc.text(label=" ")
+
+        mc.button(label="Copy Description",
+                  parent=col_layout,
+                  width=180,
+                  command=lambda *_: self._copy_desc(character)
+                  )
+        mc.button(label="Import Hair",
+                  parent=col_layout,
+                  width=180,
+                  command=lambda *_: self._import_hair(character)
+                  )
+        mc.button(label="Delete Hair",
+                  parent=col_layout,
+                  width=180,
+                  command=lambda *_: self._delete_hair(character)
                   )
 
     def _copy_all_desc(self):
+
+        flg = logging.getLogger("lettuce._copy_all_desc")
+        flg.info("Copying ALL Descriptions")
+
         if self.xml_load_state:
             lxg.copy_xgen_files(self.char_in_scene_list)
+        else:
+            flg.warning("Unable to copy descriptions because XML File is not loaded or invalid")
+
+    def _copy_desc(self, character):
+
+        flg = logging.getLogger("lettuce._copy_desc")
+        flg.info("Copying Descriptions: {}".format(character.get_charName()))
+
+        if self.xml_load_state:
+            lxg.copy_xgen_files([character])
+        else:
+            flg.warning("Unable to copy descriptions because XML File is not loaded or invalid")
 
     def _import_all_hair(self):
+
+        flg = logging.getLogger("lettuce._import_all_hair")
+        flg.info("Importing ALL Hair")
+
         if self.xml_load_state:
             set_objects = lxg.import_hairMayaFile(self.char_in_scene_list)
+            for c in self.char_in_scene_list:
+                lxg.wrap_hair_plates(c)
             for o in set_objects:
                 self.char_hair_sets[o.get_name()] = o
+        else:
+            flg.warning("Unable to import hair because XML File is not loaded or invalid")
 
-    def _collection_menu_change(self, parent):
-        mentuItem = mc.optionMenu(parent,
+    def _import_hair(self, character):
+
+        flg = logging.getLogger("lettuce._import_hair")
+        flg.info("Importing Hair for {}".format(character.get_charName))
+
+        if self.xml_load_state:
+            set_objects = lxg.import_hairMayaFile([character])
+            lxg.wrap_hair_plates(character)
+            for o in set_objects:
+                self.char_hair_sets[o.get_name()] = o
+        else:
+            flg.warning("Unable to import hair because XML File is not loaded or invalid")
+
+    def _collection_menu_change(self, character, parent):
+
+        flg = logging.getLogger("lettuce._collection_menu_change")
+
+        menu_item = mc.optionMenu(parent,
+                                  value=True,
                                   query=True,
                                   )
-        print mentuItem
+        flg.info("Item: {0} currently selected in menu {1}".format(menu_item, parent))
+
+        try:
+            character.set_current_collection(menu_item)
+            flg.info("Current Collection changed to {}".format(menu_item))
+        except NameError as e:
+            flg.warning("Could not change current collection")
+            flg.warning(e)
+
+    def _delete_all_hair(self):
+
+        flg = logging.getLogger("lettuce._delete_all_hair")
+        flg.info("Deleting ALL hair sets")
+
+        if self.xml_load_state:
+            if self.char_hair_sets:
+                for key in self.char_hair_sets:
+                    hair_set = self.char_hair_sets[key].get_name()
+
+                    flg.info("Deleting hair set: {}".format(hair_set))
+
+                    lxg.delete_set(hair_set)
+                self.char_hair_sets = {}
+            else:
+                flg.info("No hair sets currently registered in the scene")
+                flg.info("Checking for un-registered sets")
+                for c in self.char_in_scene_list:
+                    hair_set = "{}_hairSetSystem".format(c.get_charName())
+
+                    flg.info("Deleting hair set: {}".format(hair_set))
+
+                    lxg.delete_set(hair_set)
+        else:
+            flg.warning("Unable to delete hair because XML File is not loaded or invalid")
+
+    def _delete_hair(self, character):
+
+        flg = logging.getLogger("lettuce._delete_hair")
+        flg.info("Deleting hair set: {}".format(character.get_charName()))
+
+        if self.xml_load_state:
+            hair_set = "{}_hairSetSystem".format(character.get_charName())
+
+            flg.info("Deleting hair set: {}".format(hair_set))
+
+            lxg.delete_set(hair_set)
+        else:
+            flg.warning("Unable to delete hair because XML File is not loaded or invalid")
 
     def _xml_path_menu(self):
+        print("Feature unavailable at this time")
         return
 
     def _log_path_menu(self):
+        print("Feature unavailable at this time")
         return
 
     def _documentation(self):
@@ -280,32 +434,32 @@ class LettuceUI:
         flg = logging.getLogger("lettuce._reloadUI")
 
         mc.deleteUI(frame)
-        flg.debug("Deleting UI: {}".format(frame))
+        flg.info("Deleting UI: {}".format(frame))
 
         mc.frameLayout('masterFrame',
                        parent=self.uiWindow,
                        label='',
                        width=400,
                        labelVisible=False,
-                       marginWidth=2
+                       marginWidth=0
                        )
 
         if self.xml_load_state:
-            flg.debug("XML File Loaded")
+            flg.info("XML File Loaded")
             self.char_in_scene_list = self._get_characters(self.char_xml_file)
 
             if len(self.char_in_scene_list) > 0:
                 self.char_in_scene = True
-                flg.debug("Characters verified in Scene")
+                flg.info("Characters verified in Scene")
             else:
                 self.char_in_scene = False
-                flg.debug("Characters verified not in scene")
+                flg.info("Characters verified not in scene")
 
         if self.char_in_scene:
-            flg.debug("Creating Character Menus")
+            flg.info("Creating Character Menus")
             self._create_character_frame(self.char_in_scene_list, "masterFrame")
         else:
-            flg.debug("Added reload button ")
+            flg.info("Added reload button ")
             mc.button('reloadButton',
                       label="Reload",
                       command=lambda *_: self._reloadUI("reloadButton")
@@ -316,8 +470,8 @@ class LettuceUI:
         flg = logging.getLogger("lettuce._check_xml_file")
 
         if os.path.isfile(xml_file) and os.access(xml_file, os.R_OK):
-            flg.debug("Character XML File located at: {}".format(xml_file))
+            flg.info("Character XML File located at: {}".format(xml_file))
             return True
         else:
-            flg.debug("Unable to access Character XML File located at: {}".format(xml_file))
+            flg.info("Unable to access Character XML File located at: {}".format(xml_file))
             return False

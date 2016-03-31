@@ -78,6 +78,7 @@ class Character:
     def get_current_collection(self):
         return self.current_collection
 
+
     def get_current_mayaObjects(self):
         return self.current_mayaObjects
 
@@ -85,8 +86,18 @@ class Character:
     #                       Setters
     # ---------------------------------------------------
 
-    def set_current_collection(self, collection):
-        self.current_collection = collection
+    def set_current_collection(self, collection_name):
+        col = []
+        for c in self.collections:
+            col.append(c.get_version())
+        if collection_name in col:
+            for c in self.collections:
+                if c.get_version() == collection_name:
+                    self.current_collection = c
+        else:
+            raise NameError("Name: {0} does not match a collection in object{1}.".format(collection_name,
+                                                                                         self.charName
+                                                                                         ))
 
     def set_current_mayaObjects(self, mayaObjects):
         self.current_mayaObjects = mayaObjects

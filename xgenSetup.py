@@ -26,7 +26,7 @@ def generate_characters(xml_file):
     """
     flg = logging.getLogger("lettuce.xgenSetup.generate_characters")
 
-    flg.debug("Parsing XML File: {}".format(xml_file))
+    flg.info("Parsing XML File: {}".format(xml_file))
     xml_tree = ET.parse(xml_file)
     root = xml_tree.getroot()
 
@@ -35,7 +35,7 @@ def generate_characters(xml_file):
     for child in root:
         try:
             char = Character(child)
-            flg.debug("Character: {}".format(char))
+            flg.info("Character: {}".format(char))
             character_objs.append(char)
         except AttributeError as e:
             flg.error("Character not created from child, {}".format(child))
@@ -60,13 +60,10 @@ def get_scene_characters(character_objs):
     for r in full_ref_list:
         flg.debug(r)
 
-    # TODO: Figure out fatal reference error, scene 04, shot irr_123 is the source
-
-    flg.debug("For char in character_objs")
     for char in character_objs:
         for mobj in char.get_mayaObjects():
             for ref in full_ref_list:
-                flg.debug("Querying reference for {0}/{1}/{2}".format(char.get_charName(),
+                flg.info("Querying reference for {0}/{1}/{2}".format(char.get_charName(),
                                                                       mobj.get_version(),
                                                                       ref
                                                                       ))
@@ -77,7 +74,7 @@ def get_scene_characters(character_objs):
                         char_in_scene.append(char)
                 except RuntimeError as e:
                     flg.warning("Unable to query reference, {}.".format(ref))
-                    flg.debug("Error: {}".format(e))
+                    flg.info("Error: {}".format(e))
 
     flg.info("{} characters in scene".format(len(char_in_scene)))
     return char_in_scene
@@ -96,8 +93,8 @@ def copy_xgen_files(character):
     current_file_dir = get_scene_folder()
     project_dir = get_project_dir()
 
-    flg.debug("Current Scene's folder: {}".format(current_file_dir))
-    flg.debug("Current Project's folder: {}".format(project_dir))
+    flg.info("Current Scene's folder: {}".format(current_file_dir))
+    flg.info("Current Project's folder: {}".format(project_dir))
 
     gMainProgressBar = mel.eval('$tmp = $gMainProgressBar')
 
@@ -115,21 +112,21 @@ def copy_xgen_files(character):
     for c in character:
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
             flg.info("Progress Interrupted by user")
-            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.info("Canceled on step: {0} of {1}".format(step, len(character)))
             break
         collection = c.get_default_collection()
 
-        flg.debug("Character: {}".format(c.get_charName()))
+        flg.info("Character: {}".format(c.get_charName()))
         flg.debug("Collection: {}".format(collection))
 
         xg_file = collection.get_xgenFile()
         xg_file_resolved = os.path.join(project_dir, xg_file)
 
-        flg.debug("Copying file from: {0} to {1}".format(xg_file_resolved, current_file_dir))
-        flg.debug("...")
+        flg.info("Copying file from: {0} to {1}".format(xg_file_resolved, current_file_dir))
+        flg.info("...")
         try:
             shutil.copy2(xg_file_resolved, current_file_dir)
-            flg.debug("Complete")
+            flg.info("Complete")
         except IOError as e:
             mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
             flg.error("IO Error, copying failed.  {}".format(e))
@@ -179,29 +176,29 @@ def import_hairMayaFile(character):
         # Allows the user to cancel the evaluation of the script
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
             flg.info("Progress Interrupted by user")
-            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
-            flg.debug("Cancelled at beginning of loop")
+            flg.info("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.info("Cancelled at beginning of loop")
             break
 
-        flg.debug("Character: {}".format(c.get_charName()))
+        flg.info("Character: {}".format(c.get_charName()))
         set_name = "{}_hairSetSystem".format(c.get_charName())
 
-        flg.debug("Generating character set name: {}".format(set_name))
+        flg.info("Generating character set name: {}".format(set_name))
 
         delete_set(set_name)
 
         # Allows the user to cancel the evaluation of the script
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
             flg.info("Progress Interrupted by user")
-            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
-            flg.debug("Cancelled after set sanitization")
+            flg.info("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.info("Cancelled after set sanitization")
             break
 
         collection = c.get_default_collection()
         ma_file = collection.get_hairMayaFile()
 
         flg.debug("Collection: {}".format(collection))
-        flg.debug("Importing file: {}".format(ma_file))
+        flg.info("Importing file: {}".format(ma_file))
 
         new_nodes = mc.file(ma_file,
                             i=True,
@@ -227,11 +224,11 @@ def import_hairMayaFile(character):
         # Allows the user to cancel the evaluation of the script
         if mc.progressBar(gMainProgressBar, query=True, isCancelled=True):
             flg.info("Progress Interrupted by user")
-            flg.debug("Canceled on step: {0} of {1}".format(step, len(character)))
-            flg.debug("Cancelled after import")
+            flg.info("Canceled on step: {0} of {1}".format(step, len(character)))
+            flg.info("Cancelled after import")
             break
 
-        flg.debug("Creating return package")
+        flg.info("Creating return package")
         flg.info("Returning {} hair system nodes".format(len(imported_nodes)))
 
         package = SetPackage(imported_nodes, set_name)
@@ -245,7 +242,7 @@ def import_hairMayaFile(character):
     # Closes the progress bar when complete
     mc.progressBar(gMainProgressBar, edit=True, endProgress=True)
 
-    flg.debug("Returning packages :".format(set_packages))
+    flg.debug("Returning packages : {}".format(set_packages))
 
     return set_packages
 
@@ -260,7 +257,7 @@ def get_project_dir():
 
     proj_dir = mc.workspace(q=True, rootDirectory=True)
 
-    flg.debug("Current Project Folder: {}".format(proj_dir))
+    flg.info("Current Project Folder: {}".format(proj_dir))
 
     return proj_dir
 
@@ -275,7 +272,7 @@ def get_scene_folder():
 
     file_name = mc.file(q=True, sceneName=True)
 
-    flg.debug("Scene fileName: {}".format(file_name))
+    flg.info("Scene fileName: {}".format(file_name))
 
     if sys.platform == "win32":
         last_slash = file_name.rfind('\\')
@@ -284,7 +281,7 @@ def get_scene_folder():
 
     scene_dir = file_name[:last_slash + 1]
 
-    flg.debug("Scene directory: {}".format(scene_dir))
+    flg.info("Scene directory: {}".format(scene_dir))
 
     return scene_dir
 
@@ -298,7 +295,7 @@ def delete_set(set_name):
 
     flg = logging.getLogger("lettuce.xgenSetup.delete_set")
 
-    flg.debug("Set to delete: {}".format(set_name))
+    flg.info("Set to delete: {}".format(set_name))
 
     if mc.objExists(set_name):
         mc.select(set_name)
@@ -327,7 +324,7 @@ def delete_set(set_name):
                 flg.debug("Deleting {}".format(o))
                 mc.delete(o)
             except ValueError as e:
-                flg.warning("Unable to delete {0}.  Error: {1}".format(o, e))
+                flg.debug("Unable to delete {0}.  Error: {1}".format(o, e))
         flg.debug("Deleting set: {}".format(set_name))
         mc.delete(set_name)
 
@@ -344,7 +341,7 @@ def unlock_nodes(set_name):
     if mc.objExists(set_name):
         for o in mc.sets(set_name, query=True):
             if mc.lockNode(o, query=True):
-                flg.debug("Unlocking {}".format(o))
+                flg.info("Unlocking {}".format(o))
                 mc.lockNode(o, lock=False)
     else:
         flg.warning("Set, {}, does not exist".format(set_name))
@@ -356,7 +353,7 @@ def save_and_reload_scene():
     flg = logging.getLogger("lettuce.xgenSetup.save_and_reload_scene")
 
     current_file = mc.file(save=True)
-    flg.debug("Current File: {}".format(current_file))
+    flg.info("Current File: {}".format(current_file))
     mc.file(current_file, ignoreVersion=True, open=True, force=True)
 
 
@@ -369,15 +366,15 @@ def wrap_hair_plates(character):
 
     flg = logging.getLogger("lettuce.xgenSetup.wrap_hair_plates")
 
-    flg.debug("Wrapping hair plates to {}".format(character.get_charName()))
+    flg.info("Wrapping hair plates to {}".format(character.get_charName()))
 
     char_col = character.get_current_collection()
-    flg.debug("Current Collection: {}".format(char_col.get_version()))
+    flg.debug("Current Collection: {}".format(char_col))
 
     char_mesh = search_namespaces_for_mesh(character)
     char_hair_plates = char_col.get_hairPlates()
-    flg.debug("Character mesh object: {}".format(char_mesh))
-    flg.debug("Character hair plate objects: {}".format(char_hair_plates))
+    flg.info("Character mesh object: {}".format(char_mesh))
+    flg.info("Character hair plate objects: {}".format(char_hair_plates))
 
     deformer_input_list = []
 
@@ -398,10 +395,10 @@ def wrap_hair_plates(character):
     flg.debug("Objects containing envelope attributes: {}".format(deformer_input_list))
 
     for o in deformer_input_list:
-        flg.debug("Setting {0} input {1} envelope to 0".format(char_mesh, o))
+        flg.info("Setting {0} input {1} envelope to 0".format(char_mesh, o))
         mc.setAttr("{}.envelope".format(o), 0)
 
-    flg.debug("Viewport refresh")
+    flg.info("Viewport refresh")
     mc.refresh()
 
     for hp in char_hair_plates:
@@ -410,13 +407,13 @@ def wrap_hair_plates(character):
                           falloffMode=1,
                           shapeDeformed=True
                           )
-        flg.debug("Binding {0} to {1}".format(hp, char_mesh))
+        flg.info("Binding {0} to {1}".format(hp, char_mesh))
 
-    flg.debug("Viewport refresh")
+    flg.info("Viewport refresh")
     mc.refresh()
 
     for o in deformer_input_list:
-        flg.debug("Setting {0} input {1} envelope to 1".format(char_mesh, o))
+        flg.info("Setting {0} input {1} envelope to 1".format(char_mesh, o))
         mc.setAttr("{}.envelope".format(o), 1)
 
 
@@ -430,7 +427,7 @@ def node_type_filter(node_list, *filter_types):
 
     flg = logging.getLogger("lettuce.xgenSetup.node_type_filter")
 
-    flg.debug("Filtering Node List")
+    flg.info("Filtering Node List")
 
     filtered_list = []
     for node in node_list:
@@ -441,7 +438,7 @@ def node_type_filter(node_list, *filter_types):
             filtered_list.append(node)
         else:
             flg.debug("Node filtered")
-    flg.debug("Returning Filtered List")
+    flg.info("Returning Filtered List")
     return filtered_list
 
 
@@ -454,12 +451,12 @@ def search_namespaces_for_mesh(character):
 
     flg = logging.getLogger("lettuce.xgenSetup.search_namespaces_for_mesh")
 
-    flg.debug("Searching namespaces for {}".format(character.get_charName()))
+    flg.info("Searching namespaces for {}".format(character.get_charName()))
 
     char_mObjs = character.get_current_mayaObjects()
     char_mesh = char_mObjs.get_meshNodeName()
-    flg.debug("Character's maya objects: {}".format(char_mObjs.get_version()))
-    flg.debug("Character's mesh object: {}".format(char_mesh))
+    flg.info("Character's maya objects: {}".format(char_mObjs.get_version()))
+    flg.info("Character's mesh object: {}".format(char_mesh))
 
     full_ref_list = mc.ls(references=True)
     flg.debug("Full scene reference list: ")
@@ -492,5 +489,5 @@ def remove_rn(reference_node_name):
     last_r = reference_node_name.rfind('R')
     rn_removed = reference_node_name[:last_r]
 
-    flg.debug("Converting {0} to {1}.".format(reference_node_name, rn_removed))
+    flg.info("Converting {0} to {1}.".format(reference_node_name, rn_removed))
     return rn_removed
