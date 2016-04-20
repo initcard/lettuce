@@ -34,7 +34,7 @@ def generate_characters(xml_file):
     character_objs = []
     for child in root:
         try:
-            char = Character(child)
+            char = xml_to_char(child)
             flg.info("Character: {}".format(char))
             character_objs.append(char)
         except AttributeError as e:
@@ -43,6 +43,16 @@ def generate_characters(xml_file):
 
     flg.info("Returning {} Characters".format(len(character_objs)))
     return character_objs
+
+
+def xml_to_char(element):
+    charName = element.get("name")
+    charAltName = element.get("altName")
+
+    temp_col = element.findall("collection")
+    temp_mobj = element.findall("mayaObject")
+
+    return Character(charName, charAltName, temp_col, temp_mobj)
 
 
 def get_scene_characters(character_objs):
@@ -272,18 +282,12 @@ def get_scene_folder():
 
     file_name = mc.file(q=True, sceneName=True)
 
-    flg.info("Scene fileName: {}".format(file_name))
+    head, tail = os.path.split(file_name)
 
-    if sys.platform == "win32":
-        last_slash = file_name.rfind('\\')
-    else:
-        last_slash = file_name.rfind('/')
+    flg.info("Scene fileName: {}".format(tail))
+    flg.info("Scene directory: {}".format(head))
 
-    scene_dir = file_name[:last_slash + 1]
-
-    flg.info("Scene directory: {}".format(scene_dir))
-
-    return scene_dir
+    return head
 
 
 def delete_set(set_name):

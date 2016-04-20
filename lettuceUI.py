@@ -75,6 +75,9 @@ class LettuceUI:
         mc.menuItem(label="Delete ALL Character's Hair",
                     command=lambda *_: self._delete_all_hair()
                     )
+        mc.menuItem(label="Refresh Scene",
+                    command=lambda *_: self.refresh_scene()
+                    )
         mc.menuItem(label="Reload",
                     command=lambda *_: self._reloadUI("masterFrame")
                     )
@@ -96,23 +99,23 @@ class LettuceUI:
                     )
         mc.radioMenuItemCollection(parent="lg_lvl_menu")
         mc.menuItem(label="Debug",
-                    radioButton=False,
+                    radioButton=self._check_log_level(10),
                     command=lambda *_: self._change_logging_level("logging.DEBUG")
                     )
         mc.menuItem(label="Info",
-                    radioButton=False,
+                    radioButton=self._check_log_level(20),
                     command=lambda *_: self._change_logging_level("logging.INFO")
                     )
         mc.menuItem(label="Warning",
-                    radioButton=True,
+                    radioButton=self._check_log_level(30),
                     command=lambda *_: self._change_logging_level("logging.WARNING")
                     )
         mc.menuItem(label="Error",
-                    radioButton=False,
+                    radioButton=self._check_log_level(40),
                     command=lambda *_: self._change_logging_level("logging.ERROR")
                     )
         mc.menuItem(label="Critical",
-                    radioButton=False,
+                    radioButton=self._check_log_level(50),
                     command=lambda *_: self._change_logging_level("logging.CRITICAL")
                     )
 
@@ -161,6 +164,17 @@ class LettuceUI:
 
         flg.info("Showing UI...")
         mc.showWindow(self.uiWindow)
+
+    def _check_log_level(self, level):
+        flg = logging.getLogger("lettuce._check_log_level")
+
+        cur_level = self.lg.getEffectiveLevel()
+        flg.debug("Current Logging Level is: {}".format(cur_level))
+
+        if level == cur_level:
+            return True
+        else:
+            return False
 
     def _change_logging_level(self, level):
         flg = logging.getLogger("lettuce._change_logging_level")
@@ -216,8 +230,8 @@ class LettuceUI:
             flg.info("More than 2 characters")
             rows_to_make = int(math.ceil(len(characters)*0.5))
             flg.info("Going to create {0} rows to contain {1} characters.".format(rows_to_make,
-                                                                                   len(characters)
-                                                                                   ))
+                                                                                  len(characters)
+                                                                                  ))
             for i in range(0, rows_to_make):
                 name = 'row{}'.format(i)
 
@@ -243,9 +257,9 @@ class LettuceUI:
         for f in frames:
             for c in range(index, len(characters)):
                 flg.info("Creating panel: {0}; number {1}; in frame {2}".format(characters[c].get_charName(),
-                                                                                 c,
-                                                                                 f
-                                                                                 ))
+                                                                                c,
+                                                                                f
+                                                                                ))
                 self._create_character_panel(characters[c], f)
                 if index % 2 == 1:
                     index += 1
@@ -314,32 +328,56 @@ class LettuceUI:
                   command=lambda *_: self._delete_hair(character)
                   )
 
+    def _untitled_file_check(self):
+        flg = logging.getLogger("lettuce._untitled_file_check")
+
+        if mc.file(q=True, sceneName=True) == "":
+            flg.debug("File is untitled")
+            mc.confirmDialog(
+                title='Untitled Scene',
+                message='This file has never been saved, please save it before working further',
+                button=['Confirm'],
+                defaultButton='Confirm'
+            )
+            return True
+        else:
+            flg.debug("File is titled")
+            return False
+
     def _copy_all_desc(self):
 
         flg = logging.getLogger("lettuce._copy_all_desc")
         flg.info("Copying ALL Descriptions")
 
-        if self.xml_load_state:
-            lxg.copy_xgen_files(self.char_in_scene_list)
+        if not self._untitled_file_check():
+            if self.xml_load_state and self.char_in_scene:
+                lxg.copy_xgen_files(self.char_in_scene_list)
+            else:
+                flg.warning("Unable to copy descriptions because XML File is not loaded or invalid")
         else:
-            flg.warning("Unable to copy descriptions because XML File is not loaded or invalid")
+            flg.warning("Unable to copy descriptions because scene is not saved")
+            return
 
     def _copy_desc(self, character):
 
         flg = logging.getLogger("lettuce._copy_desc")
         flg.info("Copying Descriptions: {}".format(character.get_charName()))
 
-        if self.xml_load_state:
-            lxg.copy_xgen_files([character])
+        if not self._untitled_file_check():
+            if self.xml_load_state and self.char_in_scene:
+                lxg.copy_xgen_files([character])
+            else:
+                flg.warning("Unable to copy description because XML File is not loaded or invalid")
         else:
-            flg.warning("Unable to copy descriptions because XML File is not loaded or invalid")
+            flg.warning("Unable to copy description because scene is not saved")
+            return
 
     def _import_all_hair(self):
 
         flg = logging.getLogger("lettuce._import_all_hair")
         flg.info("Importing ALL Hair")
 
-        if self.xml_load_state:
+        if self.xml_load_state and self.char_in_scene:
             set_objects = lxg.import_hairMayaFile(self.char_in_scene_list)
             for c in self.char_in_scene_list:
                 lxg.wrap_hair_plates(c)
@@ -353,7 +391,7 @@ class LettuceUI:
         flg = logging.getLogger("lettuce._import_hair")
         flg.info("Importing Hair for {}".format(character.get_charName))
 
-        if self.xml_load_state:
+        if self.xml_load_state and self.char_in_scene:
             set_objects = lxg.import_hairMayaFile([character])
             lxg.wrap_hair_plates(character)
             for o in set_objects:
@@ -462,7 +500,7 @@ class LettuceUI:
             flg.info("Added reload button ")
             mc.button('reloadButton',
                       label="Reload",
-                      command=lambda *_: self._reloadUI("reloadButton")
+                      command=lambda *_: self._reloadUI("masterFrame")
                       )
 
     def _check_xml_file(self, xml_file):
@@ -475,3 +513,6 @@ class LettuceUI:
         else:
             flg.info("Unable to access Character XML File located at: {}".format(xml_file))
             return False
+
+    def refresh_scene(self):
+        lxg.save_and_reload_scene()

@@ -1,4 +1,4 @@
-
+from os.path import normpath
 # The character Class is the main container for all information relevant to the character.  It takes the parameter from
 # the xml element tree and then builds the character from that.  It calls on two other classes, collection and
 # mayaObjects.  These should not be constructed directly.  If the xml dom is not formatted correctly, this will fail.
@@ -10,23 +10,23 @@
 
 
 class Character:
-    def __init__(self, element):
-        self.charName = element.get("name")
-        self.charAltName = element.get("altName")
+    def __init__(self, charName, charAltName, col, mobj):
+        self.charName = charName
+        self.charAltName = charAltName
 
         self.collections = []
         self.mayaObjects = []
 
-        temp_col = element.findall("collection")
-        temp_mobj = element.findall("mayaObject")
+        temp_col = col
+        temp_mobj = mobj
 
         if temp_col is not None:
-            for col in temp_col:
-                self.collections.append(_Collection(col))
+            for c in temp_col:
+                self.collections.append(_Collection(c))
 
         if temp_mobj is not None:
-            for mobj in temp_mobj:
-                self.mayaObjects.append(_MayaObject(mobj))
+            for m in temp_mobj:
+                self.mayaObjects.append(_MayaObject(m))
 
         self.current_collection = self.collections[0]
         self.current_mayaObjects = self.mayaObjects[0]
@@ -132,12 +132,12 @@ class _Collection:
         self._version = element.get("version")
 
         try:
-            self._mayaFile = element.find("mayaFile").text
+            self._mayaFile = normpath(element.find("mayaFile").text)
         except AttributeError:
             self._mayaFile = ""
 
         try:
-            self._xgenFile = element.find("xgenFile").text
+            self._xgenFile = normpath(element.find("xgenFile").text)
         except AttributeError:
             self._mayaFile = ""
 
@@ -181,12 +181,12 @@ class _MayaObject:
         self._version = element.get("version")
 
         try:
-            self._origMeshFile = element.find("mayaFile").text
+            self._origMeshFile = normpath(element.find("mayaFile").text)
         except AttributeError:
             self._origMeshFile = ""
 
         try:
-            self._meshNodeName = element.find("characterMesh").text
+            self._meshNodeName = normpath(element.find("characterMesh").text)
         except AttributeError:
             self._meshNodeName = ""
 
